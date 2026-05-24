@@ -23,18 +23,23 @@ const app = express();
 app.use(helmet());
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
-const allowedOrigins = (
-  "https://pos-rho-five.vercel.app" || "http://localhost:3000"
-)
-  .split(",")
-  .map((o) => o.trim());
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://pos-rho-five.vercel.app",
+  "https://pos-two-tan.vercel.app",
+];
 
 app.use(
   cors({
     origin: (origin, cb) => {
-      // allow Postman / server-to-server (no origin)
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-      cb(new Error(`CORS: origin ${origin} not allowed`));
+      // Allow Postman / server-side requests
+      if (!origin) return cb(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return cb(null, true);
+      }
+
+      return cb(new Error(`CORS: origin ${origin} not allowed`));
     },
     credentials: true,
   }),
