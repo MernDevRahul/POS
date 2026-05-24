@@ -23,7 +23,9 @@ const app = express();
 app.use(helmet());
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000")
+const allowedOrigins = (
+  "https://pos-rho-five.vercel.app" || "http://localhost:3000"
+)
   .split(",")
   .map((o) => o.trim());
 
