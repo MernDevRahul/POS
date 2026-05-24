@@ -198,7 +198,7 @@ export default function BillingPage() {
                 marginLeft: "var(--sidebar-w)"
               }}
             >
-              {searchResults.map((p) => (
+              {searchResults?.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => {
@@ -297,7 +297,7 @@ export default function BillingPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
+                {items?.map((item) => (
                   <CartItem key={item.id} item={item} />
                 ))}
               </tbody>
@@ -335,7 +335,7 @@ export default function BillingPage() {
             { label: "Items", value: items.reduce((s, x) => s + x.qty, 0) },
             { label: "Subtotal", value: fmt(subTotal) },
             { label: "GST", value: fmt(taxTotal), color: "var(--info)" },
-          ].map(({ label, value, color }) => (
+          ]?.map(({ label, value, color }) => (
             <div
               key={label}
               style={{

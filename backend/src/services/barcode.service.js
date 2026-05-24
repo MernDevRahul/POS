@@ -117,7 +117,7 @@ function generateBarcodeSVG(sku, label = '', opts = {}) {
   const brandingSize  = 24;
   const hasLabel      = !!(label && label.trim());
   const hasPrice      = !!price;
-  const variantStr    = [colors.join('-'), sizes.join('-')].filter(Boolean).join(' | ');
+  const variantStr    = [colors.join('-'), sizes.join('-')]?.filter(Boolean).join(' | ');
   const hasVariant    = !!variantStr;
 
   // Further optimized to fill the 2x2 paper even more

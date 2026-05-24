@@ -111,7 +111,7 @@ async function generateSheet(req, res, next) {
     }
 
     // Fetch all products in one query
-    const ids = requested.map(r => r.productId).filter(Boolean);
+    const ids = requested.map(r => r.productId)?.filter(Boolean);
     const dbProducts = await prisma.product.findMany({
       where: { id: { in: ids } },
       select: { id: true, sku: true, name: true, sellingPrice: true, isActive: true, colors: true, sizes: true },

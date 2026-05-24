@@ -85,7 +85,7 @@ const useCartStore = create((set, get) => ({
   },
 
   removeItem: (id) => {
-    set((s) => ({ items: s.items.filter((x) => x.id !== id) }));
+    set((s) => ({ items: s.items?.filter((x) => x.id !== id) }));
   },
 
   setBillDiscount: (v) => set({ billDiscount: Number(v) || 0 }),

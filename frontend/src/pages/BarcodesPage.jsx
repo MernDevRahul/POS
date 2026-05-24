@@ -78,7 +78,7 @@ export default function BarcodesPage() {
   const handlePrintSheet = async () => {
     if (selectedCount === 0) return toast.error("Select at least one product");
     const body = {
-      products: Object.entries(selected).map(([productId, copies]) => ({
+      products: Object.entries(selected)?.map(([productId, copies]) => ({
         productId,
         copies,
       })),
@@ -166,7 +166,7 @@ export default function BarcodesPage() {
             onChange={(e) => setCols(Number(e.target.value))}
             style={{ width: 80 }}
           >
-            {[1, 2].map((n) => (
+            {[1, 2]?.map((n) => (
               <option key={n} value={n}>
                 {n}
               </option>
@@ -252,7 +252,7 @@ export default function BarcodesPage() {
               </tr>
             </thead>
             <tbody>
-              {products.map((p) => {
+              {products?.map((p) => {
                 const isChecked = !!selected[p.id];
                 const isPreviewing = previewId === p.id;
 

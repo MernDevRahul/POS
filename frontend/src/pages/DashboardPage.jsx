@@ -18,7 +18,6 @@ const RANGES = [
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
-  console.log('tooltip', { label, payload });
   return (
     <div style={{
       background: 'var(--bg-overlay)', border: '1px solid var(--border)',
@@ -108,7 +107,7 @@ export default function DashboardPage() {
             <KpiCard
               label="Low Stock Alerts"
               value={lowItems.length}
-              sub={lowItems.filter(x => x.stockQty <= 0).length + ' out of stock'}
+              sub={lowItems?.filter(x => x.stockQty <= 0).length + ' out of stock'}
               accent={lowItems.length > 0 ? 'danger' : 'success'}
             />
           </div>

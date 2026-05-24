@@ -132,7 +132,7 @@ export default function InventoryPage() {
             ⚠ {lowStock.length} item(s) need restocking
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--sp-2)' }}>
-            {lowStock.map((p) => (
+            {lowStock?.map((p) => (
               <span key={p.id} style={{
                 background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.2)',
                 borderRadius: 'var(--r-sm)', padding: '2px 10px',
@@ -168,7 +168,7 @@ export default function InventoryPage() {
                 </tr>
               </thead>
               <tbody>
-                {products.map((p) => {
+                {products?.map((p) => {
                   const st = stockStatus(p.stockQty, p.lowStockThreshold);
                   return (
                     <tr key={p.id}>
@@ -234,7 +234,7 @@ export default function InventoryPage() {
           <div style={{ marginBottom: 'var(--sp-4)' }}>
             <select value={movFilter} onChange={(e) => { setMovFilter(e.target.value); setMovPage(1); }} style={{ width: 220 }}>
               <option value="">All Products</option>
-              {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              {products?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
           {movLoading ? (
@@ -248,7 +248,7 @@ export default function InventoryPage() {
                   <tr><th>Time</th><th>Product</th><th>Type</th><th>Qty Change</th><th>Stock After</th><th>Reason</th><th>By</th></tr>
                 </thead>
                 <tbody>
-                  {movements.map((m) => (
+                  {movements?.map((m) => (
                     <tr key={m.id}>
                       <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{fmtDateTime(m.createdAt)}</td>
                       <td style={{ fontSize: '0.85rem' }}>{m.product?.name}</td>

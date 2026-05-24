@@ -210,7 +210,7 @@ export default function SettingsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((u) => (
+                  {users?.map((u) => (
                     <tr key={u.id}>
                       <td style={{ fontWeight: 600 }}>
                         {u.name}
@@ -327,7 +327,7 @@ export default function SettingsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {categories.map((c) => (
+                  {categories?.map((c) => (
                     <tr key={c.id}>
                       <td style={{ fontWeight: 600 }}>{c.name}</td>
                       <td>

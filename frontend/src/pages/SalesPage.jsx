@@ -140,7 +140,7 @@ export default function SalesPage() {
                 </tr>
               </thead>
               <tbody>
-                {sales.map((s) => (
+                {sales?.map((s) => (
                   <tr key={s.id}>
                     <td
                       style={{
