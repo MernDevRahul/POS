@@ -14,6 +14,7 @@ export default function LoginPage() {
   const loginMutation = useMutation({
     mutationFn: (body) => authApi.login(body),
     onSuccess: (res) => {
+      localStorage.setItem('axispos_token', res.data.token);
       setAuth(res.data.user);
       toast.success(`Welcome back, ${res.data.user.name}`);
       navigate('/billing');
