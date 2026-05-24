@@ -26,9 +26,12 @@ export default function SalesPage() {
     staleTime: 15_000,
   });
 
-  const sales = data?.data?.sales ?? [];
-  const totalPages = Math.ceil((data?.data?.total ?? 0) / 30);
-  const totalCount = data?.data?.total ?? 0;
+  const sales = data?.data?.items ?? (data?.data?.sales ?? []);
+  const meta = data?.data?.meta;
+  const totalPages = meta?.totalPages ?? Math.ceil((data?.data?.total ?? 0) / 30);
+  const totalCount = meta?.total ?? (data?.data?.total ?? 0);
+  const currentLimit = meta?.limit ?? 30;
+  const currentPage = meta?.page ?? page;
 
   const voidMutation = useMutation({
     mutationFn: salesApi.void,
@@ -236,44 +239,35 @@ export default function SalesPage() {
                 ))}
               </tbody>
             </table>
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--sp-4) var(--sp-5)', borderTop: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  Showing {((currentPage - 1) * currentLimit) + 1} to {Math.min(currentPage * currentLimit, totalCount)} of {totalCount} sales
+                </div>
+                <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+                  <button 
+                    className="btn btn-ghost btn-sm" 
+                    disabled={currentPage === 1}
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                  >
+                    Previous
+                  </button>
+                  <div style={{ padding: '0 var(--sp-2)', display: 'flex', alignItems: 'center', fontSize: '0.9rem' }}>
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <button 
+                    className="btn btn-ghost btn-sm" 
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div
-              style={{
-                display: "flex",
-                gap: "var(--sp-2)",
-                marginTop: "var(--sp-4)",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                ← Prev
-              </button>
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "0.78rem",
-                  color: "var(--text-muted)",
-                }}
-              >
-                Page {page} of {totalPages}
-              </span>
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-              >
-                Next →
-              </button>
-            </div>
-          )}
         </>
       )}
 

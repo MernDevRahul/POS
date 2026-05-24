@@ -5,16 +5,45 @@ const { ok, fail } = require('../utils/response');
 
 // ── SERVICE ──────────────────────────────────────────────────────────────────
 
-async function overview() {
-  return prisma.product.findMany({
-    where: { isActive: true },
-    select: {
-      id: true, sku: true, name: true,
-      stockQty: true, lowStockThreshold: true,
-      category: { select: { name: true } },
-    },
-    orderBy: { name: 'asc' },
-  });
+async function overview(query = {}) {
+  const { search, page = 1, limit = 10 } = query;
+  const where = { isActive: true };
+
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { sku: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
+  const pageNum = parseInt(page, 10) || 1;
+  const limitNum = parseInt(limit, 10) || 10;
+  const skip = (pageNum - 1) * limitNum;
+
+  const [items, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      select: {
+        id: true, sku: true, name: true,
+        stockQty: true, lowStockThreshold: true,
+        category: { select: { name: true } },
+      },
+      orderBy: { name: 'asc' },
+      skip,
+      take: limitNum,
+    }),
+    prisma.product.count({ where }),
+  ]);
+
+  return {
+    items,
+    meta: {
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum),
+    }
+  };
 }
 
 async function lowStock() {
@@ -28,16 +57,36 @@ async function lowStock() {
   return products;
 }
 
-async function getMovements({ productId, limit = 50 }) {
-  return prisma.stockMovement.findMany({
-    where: productId ? { productId } : undefined,
-    include: {
-      product:   { select: { sku: true, name: true } },
-      createdBy: { select: { name: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: parseInt(limit),
-  });
+async function getMovements({ productId, page = 1, limit = 10 }) {
+  const where = productId ? { productId } : undefined;
+  
+  const pageNum = parseInt(page, 10) || 1;
+  const limitNum = parseInt(limit, 10) || 10;
+  const skip = (pageNum - 1) * limitNum;
+
+  const [items, total] = await Promise.all([
+    prisma.stockMovement.findMany({
+      where,
+      include: {
+        product:   { select: { sku: true, name: true } },
+        createdBy: { select: { name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limitNum,
+    }),
+    prisma.stockMovement.count({ where }),
+  ]);
+
+  return {
+    items,
+    meta: {
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum),
+    }
+  };
 }
 
 async function adjust(productId, qtyDelta, reason, userId) {
@@ -84,8 +133,8 @@ async function adjust(productId, qtyDelta, reason, userId) {
 
 // ── CONTROLLER ────────────────────────────────────────────────────────────────
 
-exports.overview = async (_req, res, next) => {
-  try { ok(res, await overview()); } catch (err) { next(err); }
+exports.overview = async (req, res, next) => {
+  try { ok(res, await overview(req.query)); } catch (err) { next(err); }
 };
 
 exports.lowStock = async (_req, res, next) => {

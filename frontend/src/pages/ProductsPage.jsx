@@ -31,6 +31,8 @@ export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("");
   const [filterActive, setFilterActive] = useState("true");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
   const [showModal, setShowModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -38,12 +40,14 @@ export default function ProductsPage() {
 
   // Queries
   const { data: productsData, isLoading } = useQuery({
-    queryKey: ["products", search, filterCat, filterActive],
+    queryKey: ["products", search, filterCat, filterActive, page, limit],
     queryFn: () =>
-      productsApi.list({ search, categoryId: filterCat, active: filterActive }),
+      productsApi.list({ search, categoryId: filterCat, active: filterActive, page, limit }),
     staleTime: 15_000,
   });
-  const products = productsData?.data ?? [];
+  
+  const products = productsData?.data?.items ?? (Array.isArray(productsData?.data) ? productsData.data : []);
+  const meta = productsData?.data?.meta;
 
   const { data: catsData } = useQuery({
     queryKey: ["categories"],
@@ -150,7 +154,7 @@ export default function ProductsPage() {
         <div>
           <div className="page-title">Products</div>
           <div className="page-subtitle">
-            {products.length} product(s) found
+            {meta ? `${meta.total} product(s) found` : `${products.length} product(s) found`}
           </div>
         </div>
         {canEdit && (
@@ -171,13 +175,13 @@ export default function ProductsPage() {
       >
         <input
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           placeholder="Search by name or SKU…"
           style={{ flex: 1, minWidth: 200 }}
         />
         <select
           value={filterCat}
-          onChange={(e) => setFilterCat(e.target.value)}
+          onChange={(e) => { setFilterCat(e.target.value); setPage(1); }}
           style={{ width: 160 }}
         >
           <option value="">All Categories</option>
@@ -189,7 +193,7 @@ export default function ProductsPage() {
         </select>
         <select
           value={filterActive}
-          onChange={(e) => setFilterActive(e.target.value)}
+          onChange={(e) => { setFilterActive(e.target.value); setPage(1); }}
           style={{ width: 130 }}
         >
           <option value="true">Active</option>
@@ -323,6 +327,34 @@ export default function ProductsPage() {
               })}
             </tbody>
           </table>
+          
+          {/* Pagination Controls */}
+          {meta && meta.totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--sp-4) var(--sp-5)', borderTop: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                Showing {((meta.page - 1) * meta.limit) + 1} to {Math.min(meta.page * meta.limit, meta.total)} of {meta.total} products
+              </div>
+              <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+                <button 
+                  className="btn btn-ghost btn-sm" 
+                  disabled={meta.page === 1}
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                >
+                  Previous
+                </button>
+                <div style={{ padding: '0 var(--sp-2)', display: 'flex', alignItems: 'center', fontSize: '0.9rem' }}>
+                  Page {meta.page} of {meta.totalPages}
+                </div>
+                <button 
+                  className="btn btn-ghost btn-sm" 
+                  disabled={meta.page >= meta.totalPages}
+                  onClick={() => setPage(p => Math.min(meta.totalPages, p + 1))}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

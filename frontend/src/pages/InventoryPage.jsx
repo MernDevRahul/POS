@@ -18,27 +18,34 @@ export default function InventoryPage() {
   const [adjustTarget, setAdjust] = useState(null);
   const [adjQty, setAdjQty]       = useState('');
   const [adjReason, setAdjReason] = useState('');
+  
+  // Overview Tab State
+  const [search, setSearch]             = useState('');
+  const [overviewPage, setOverviewPage] = useState(1);
+  const [overviewLimit]                 = useState(10);
+  
+  // Movements Tab State
   const [movFilter, setMovFilter] = useState('');
-  const [search, setSearch]       = useState('');
+  const [movPage, setMovPage]     = useState(1);
+  const [movLimit]                = useState(10);
 
   const { data: overviewData, isLoading } = useQuery({
-    queryKey: ['inventory'],
-    queryFn:  inventoryApi.overview,
+    queryKey: ['inventory', search, overviewPage, overviewLimit],
+    queryFn:  () => inventoryApi.overview({ search, page: overviewPage, limit: overviewLimit }),
     refetchInterval: 30_000,
   });
-  const allProducts = overviewData?.data ?? [];
-
-  const products = allProducts.filter(p => 
-    p.name.toLowerCase().includes(search.toLowerCase()) || 
-    p.sku.toLowerCase().includes(search.toLowerCase())
-  );
+  
+  const products = overviewData?.data?.items ?? (Array.isArray(overviewData?.data) ? overviewData.data : []);
+  const overviewMeta = overviewData?.data?.meta;
 
   const { data: movData, isLoading: movLoading } = useQuery({
-    queryKey: ['movements', movFilter],
-    queryFn:  () => inventoryApi.movements({ productId: movFilter || undefined, limit: 100 }),
+    queryKey: ['movements', movFilter, movPage, movLimit],
+    queryFn:  () => inventoryApi.movements({ productId: movFilter || undefined, page: movPage, limit: movLimit }),
     enabled:  tab === 'movements',
   });
-  const movements = movData?.data ?? [];
+  
+  const movements = movData?.data?.items ?? (Array.isArray(movData?.data) ? movData.data : []);
+  const movMeta = movData?.data?.meta;
 
   const { data: lowData } = useQuery({
     queryKey: ['low-stock'],
@@ -89,28 +96,30 @@ export default function InventoryPage() {
           <div className="page-subtitle">Stock levels and movement log</div>
         </div>
 
-        <div className="flex gap-2" style={{ minWidth: 320 }}>
-          <div style={{ position: 'relative', flex: 1 }}>
-            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>🔍</span>
-            <input
-              type="text"
-              placeholder="Search by name or SKU…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ paddingLeft: 36, fontSize: '0.82rem' }}
-            />
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                style={{
-                  position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-                  background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
-                  padding: 4, fontSize: '0.8rem'
-                }}
-              >✕</button>
-            )}
+        {tab === 'overview' && (
+          <div className="flex gap-2" style={{ minWidth: 320 }}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>🔍</span>
+              <input
+                type="text"
+                placeholder="Search by name or SKU…"
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setOverviewPage(1); }}
+                style={{ paddingLeft: 36, fontSize: '0.82rem' }}
+              />
+              {search && (
+                <button
+                  onClick={() => { setSearch(''); setOverviewPage(1); }}
+                  style={{
+                    position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                    background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
+                    padding: 4, fontSize: '0.8rem'
+                  }}
+                >✕</button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Low stock alert */}
@@ -146,10 +155,8 @@ export default function InventoryPage() {
       {tab === 'overview' && (
         isLoading ? (
           <div className="flex gap-3" style={{ justifyContent: 'center', padding: 'var(--sp-8)' }}><Spinner /> Loading…</div>
-        ) : allProducts.length === 0 ? (
-          <EmptyState icon="◉" title="No active products" />
         ) : products.length === 0 ? (
-          <EmptyState icon="🔍" title="No matching products found" />
+          <EmptyState icon="🔍" title={search ? "No matching products found" : "No active products"} />
         ) : (
           <div className="table-wrap">
             <table>
@@ -190,6 +197,33 @@ export default function InventoryPage() {
                 })}
               </tbody>
             </table>
+            
+            {overviewMeta && overviewMeta.totalPages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--sp-4) var(--sp-5)', borderTop: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  Showing {((overviewMeta.page - 1) * overviewMeta.limit) + 1} to {Math.min(overviewMeta.page * overviewMeta.limit, overviewMeta.total)} of {overviewMeta.total} products
+                </div>
+                <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+                  <button 
+                    className="btn btn-ghost btn-sm" 
+                    disabled={overviewMeta.page === 1}
+                    onClick={() => setOverviewPage(p => Math.max(1, p - 1))}
+                  >
+                    Previous
+                  </button>
+                  <div style={{ padding: '0 var(--sp-2)', display: 'flex', alignItems: 'center', fontSize: '0.9rem' }}>
+                    Page {overviewMeta.page} of {overviewMeta.totalPages}
+                  </div>
+                  <button 
+                    className="btn btn-ghost btn-sm" 
+                    disabled={overviewMeta.page >= overviewMeta.totalPages}
+                    onClick={() => setOverviewPage(p => Math.min(overviewMeta.totalPages, p + 1))}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )
       )}
@@ -198,7 +232,7 @@ export default function InventoryPage() {
       {tab === 'movements' && (
         <div>
           <div style={{ marginBottom: 'var(--sp-4)' }}>
-            <select value={movFilter} onChange={(e) => setMovFilter(e.target.value)} style={{ width: 220 }}>
+            <select value={movFilter} onChange={(e) => { setMovFilter(e.target.value); setMovPage(1); }} style={{ width: 220 }}>
               <option value="">All Products</option>
               {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
@@ -229,6 +263,33 @@ export default function InventoryPage() {
                   ))}
                 </tbody>
               </table>
+              
+              {movMeta && movMeta.totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--sp-4) var(--sp-5)', borderTop: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    Showing {((movMeta.page - 1) * movMeta.limit) + 1} to {Math.min(movMeta.page * movMeta.limit, movMeta.total)} of {movMeta.total} movements
+                  </div>
+                  <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+                    <button 
+                      className="btn btn-ghost btn-sm" 
+                      disabled={movMeta.page === 1}
+                      onClick={() => setMovPage(p => Math.max(1, p - 1))}
+                    >
+                      Previous
+                    </button>
+                    <div style={{ padding: '0 var(--sp-2)', display: 'flex', alignItems: 'center', fontSize: '0.9rem' }}>
+                      Page {movMeta.page} of {movMeta.totalPages}
+                    </div>
+                    <button 
+                      className="btn btn-ghost btn-sm" 
+                      disabled={movMeta.page >= movMeta.totalPages}
+                      onClick={() => setMovPage(p => Math.min(movMeta.totalPages, p + 1))}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

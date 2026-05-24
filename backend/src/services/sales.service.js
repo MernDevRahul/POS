@@ -138,7 +138,10 @@ async function listSales({ from, to, page = 1, limit = 50 }) {
     if (to)   where.createdAt.lte = new Date(new Date(to).setHours(23, 59, 59, 999));
   }
 
-  const [total, sales] = await Promise.all([
+  const pageNum = parseInt(page, 10) || 1;
+  const limitNum = parseInt(limit, 10) || 50;
+
+  const [total, items] = await Promise.all([
     prisma.sale.count({ where }),
     prisma.sale.findMany({
       where,
@@ -147,12 +150,20 @@ async function listSales({ from, to, page = 1, limit = 50 }) {
         createdBy: { select: { name: true } },
       },
       orderBy: { createdAt: 'desc' },
-      skip:  (parseInt(page) - 1) * parseInt(limit),
-      take:  parseInt(limit),
+      skip:  (pageNum - 1) * limitNum,
+      take:  limitNum,
     }),
   ]);
 
-  return { total, page: parseInt(page), limit: parseInt(limit), sales };
+  return {
+    items,
+    meta: {
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum),
+    }
+  };
 }
 
 async function getSaleById(id) {

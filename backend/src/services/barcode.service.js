@@ -287,7 +287,7 @@ function generateBarcodeSVG(sku, label = '', opts = {}) {
 // }
 
 function generateBarcodeSheet(products, opts = {}) {
-  const { moduleWidth = 1.5, barHeight = 80 } = opts;
+  const { cols = 2, moduleWidth = 1.5, barHeight = 80 } = opts;
 
   const labels = [];
 
@@ -301,12 +301,11 @@ function generateBarcodeSheet(products, opts = {}) {
 
   const rows = [];
 
-  for (let i = 0; i < labels.length; i += 2) {
-    const left = labels[i];
-    const right = labels[i + 1];
+  for (let i = 0; i < labels.length; i += cols) {
+    const rowLabels = labels.slice(i, i + cols);
 
     const renderLabel = (p) => {
-      if (!p) return `<div class="label"></div>`;
+      if (!p) return `<div class="label empty"></div>`;
 
       const formattedPrice = p.sellingPrice
         ? `₹${parseFloat(p.sellingPrice).toFixed(2)}`
@@ -327,20 +326,51 @@ function generateBarcodeSheet(products, opts = {}) {
       `;
     };
 
+    while (rowLabels.length < cols) {
+      rowLabels.push(null);
+    }
+
     rows.push(`
       <div class="row">
-        ${renderLabel(left)}
-        ${renderLabel(right)}
+        ${rowLabels.map(renderLabel).join('')}
       </div>
     `);
   }
+
+  const isThermal = cols <= 2;
+  const pageCss = isThermal ? `
+@page{
+  size:100mm 50mm;
+  margin:0;
+}
+html,body{
+  width:100mm;
+  height:50mm;
+}
+.row{
+  width:100mm;
+  height:50mm;
+  page-break-after:always;
+}
+` : `
+@page{
+  margin: 10mm;
+}
+html,body{
+  width: 100%;
+}
+.row{
+  width: 100%;
+  margin-bottom: 5mm;
+  page-break-inside: avoid;
+}
+`;
 
   return `
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8" />
-
 <style>
 *{
   margin:0;
@@ -349,25 +379,20 @@ function generateBarcodeSheet(products, opts = {}) {
 }
 
 html,body{
-  width:100mm;
   background:#fff;
-  overflow:hidden;
   font-family:Arial,sans-serif;
 }
 
+${pageCss}
+
 .sheet{
-  width:100mm;
+  width: 100%;
 }
 
 .row{
-  width:100mm;
-  height:50mm;
-
   display:flex;
   justify-content:space-between;
   align-items:center;
-
-  page-break-after:always;
   overflow:hidden;
   padding:0 2mm;
   box-sizing:border-box;
@@ -378,34 +403,26 @@ html,body{
 }
 
 .label{
-  width:45mm;
-  height:46mm;
-
+  width:calc(100% / ${cols} - 4mm);
+  ${isThermal ? 'height: 46mm;' : ''}
   overflow:hidden;
-
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
 }
 
+.label.empty{
+  visibility: hidden;
+}
+
 .label svg{
   width:100%;
-  height:100%;
+  ${isThermal ? 'height:100%;' : 'height:auto;'}
   display:block;
 }
 
-@page{
-  size:100mm 50mm;
-  margin:0;
-}
-
 @media print{
-  html,body{
-    width:100mm;
-    margin:0;
-  }
-
   body{
     -webkit-print-color-adjust:exact;
     print-color-adjust:exact;

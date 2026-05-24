@@ -52,7 +52,7 @@ export const categoriesApi = {
 };
 
 export const inventoryApi = {
-  overview:  ()       => api.get('/inventory'),
+  overview:  (params) => api.get('/inventory', { params }),
   lowStock:  ()       => api.get('/inventory/low-stock'),
   movements: (params) => api.get('/inventory/movements', { params }),
   adjust:    (body)   => api.post('/inventory/adjust', body),

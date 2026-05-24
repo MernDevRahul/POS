@@ -11,7 +11,7 @@ const PRODUCT_SELECT = {
   createdAt: true, updatedAt: true,
 };
 
-async function list({ search, categoryId, active }) {
+async function list({ search, categoryId, active, page = 1, limit = 10 }) {
   const where = {};
 
   if (search) {
@@ -23,11 +23,30 @@ async function list({ search, categoryId, active }) {
   if (categoryId) where.categoryId = categoryId;
   if (active !== undefined) where.isActive = active === 'true' || active === true;
 
-  return prisma.product.findMany({
-    where,
-    select: PRODUCT_SELECT,
-    orderBy: { name: 'asc' },
-  });
+  const pageNum = parseInt(page, 10) || 1;
+  const limitNum = parseInt(limit, 10) || 10;
+  const skip = (pageNum - 1) * limitNum;
+
+  const [items, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      select: PRODUCT_SELECT,
+      orderBy: { name: 'asc' },
+      skip,
+      take: limitNum,
+    }),
+    prisma.product.count({ where }),
+  ]);
+
+  return {
+    items,
+    meta: {
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum),
+    }
+  };
 }
 
 async function getById(id) {

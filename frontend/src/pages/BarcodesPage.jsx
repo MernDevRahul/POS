@@ -8,6 +8,8 @@ import Badge from "@/components/ui/Badge";
 
 export default function BarcodesPage() {
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
   const [selected, setSelected] = useState({}); // { productId: copies }
   const [cols, setCols] = useState(2);
   const [previewId, setPreviewId] = useState(null);
@@ -15,11 +17,12 @@ export default function BarcodesPage() {
   const [loadingPreview, setLoadingPreview] = useState(false);
 
   const { data: productsData, isLoading } = useQuery({
-    queryKey: ["products", search, "", "true"],
-    queryFn: () => productsApi.list({ search, active: true }),
+    queryKey: ["products", search, "", "true", page, limit],
+    queryFn: () => productsApi.list({ search, active: true, page, limit }),
     staleTime: 30_000,
   });
-  const products = productsData?.data ?? [];
+  const products = productsData?.data?.items ?? (Array.isArray(productsData?.data) ? productsData.data : []);
+  const meta = productsData?.data?.meta;
 
   const toggleSelect = (id) => {
     setSelected((s) => {
@@ -152,7 +155,7 @@ export default function BarcodesPage() {
       >
         <input
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           placeholder="Search products…"
           style={{ flex: 1, minWidth: 200 }}
         />
@@ -163,7 +166,7 @@ export default function BarcodesPage() {
             onChange={(e) => setCols(Number(e.target.value))}
             style={{ width: 80 }}
           >
-            {[1, 2, 3, 4, 5, 6].map((n) => (
+            {[1, 2].map((n) => (
               <option key={n} value={n}>
                 {n}
               </option>
@@ -171,7 +174,7 @@ export default function BarcodesPage() {
           </select>
         </div>
         <button className="btn btn-ghost btn-sm" onClick={selectAll}>
-          Select All
+          Select All On Page
         </button>
         <button
           className="btn btn-ghost btn-sm"
@@ -450,6 +453,34 @@ export default function BarcodesPage() {
               })}
             </tbody>
           </table>
+          
+          {/* Pagination Controls */}
+          {meta && meta.totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--sp-4) var(--sp-5)', borderTop: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                Showing {((meta.page - 1) * meta.limit) + 1} to {Math.min(meta.page * meta.limit, meta.total)} of {meta.total} products
+              </div>
+              <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+                <button 
+                  className="btn btn-ghost btn-sm" 
+                  disabled={meta.page === 1}
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                >
+                  Previous
+                </button>
+                <div style={{ padding: '0 var(--sp-2)', display: 'flex', alignItems: 'center', fontSize: '0.9rem' }}>
+                  Page {meta.page} of {meta.totalPages}
+                </div>
+                <button 
+                  className="btn btn-ghost btn-sm" 
+                  disabled={meta.page >= meta.totalPages}
+                  onClick={() => setPage(p => Math.min(meta.totalPages, p + 1))}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

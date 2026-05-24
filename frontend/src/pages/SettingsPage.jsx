@@ -15,29 +15,12 @@ export default function SettingsPage() {
   const { user: currentUser } = useAuthStore();
   const qc = useQueryClient();
 
-  const [tab, setTab] = useState("store");
+  const [tab, setTab] = useState("users");
   const [userModal, setUserModal] = useState(false);
   const [editUser, setEditUser] = useState(null);
   const [userForm, setUserForm] = useState(EMPTY_USER);
   const [catName, setCatName] = useState("");
   const [deactivateTarget, setDeactivateTarget] = useState(null);
-
-  // Store config (local state only in v1 — saved to localStorage)
-  const [storeConfig, setStoreConfig] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("axispos_store") || "{}");
-    } catch {
-      return {};
-    }
-  });
-  const [storeSaved, setStoreSaved] = useState(false);
-
-  const saveStoreConfig = () => {
-    localStorage.setItem("axispos_store", JSON.stringify(storeConfig));
-    setStoreSaved(true);
-    setTimeout(() => setStoreSaved(false), 2000);
-    toast.success("Store settings saved");
-  };
 
   // Users
   const { data: usersData, isLoading: usersLoading } = useQuery({
@@ -189,51 +172,9 @@ export default function SettingsPage() {
           display: "flex",
         }}
       >
-        <TabBtn id="store" label="Store" />
         <TabBtn id="users" label="Staff" />
         <TabBtn id="categories" label="Categories" />
       </div>
-
-      {/* Store tab */}
-      {tab === "store" && (
-        <div className="card">
-          <div className="card-header">
-            <span className="card-title">Store Details</span>
-          </div>
-          {[
-            { key: "storeName", label: "Store Name", placeholder: "My Store" },
-            { key: "gstin", label: "GSTIN", placeholder: "07ABCDE1234F1Z5" },
-            {
-              key: "address",
-              label: "Address",
-              placeholder: "123 Main Road, New Delhi",
-            },
-            { key: "phone", label: "Phone", placeholder: "+91 98765 43210" },
-            {
-              key: "invoiceNote",
-              label: "Invoice Footer",
-              placeholder: "Thank you for your purchase!",
-            },
-          ].map(({ key, label, placeholder }) => (
-            <div key={key} className="field">
-              <label className="label">{label}</label>
-              <input
-                value={storeConfig[key] || ""}
-                onChange={(e) =>
-                  setStoreConfig((c) => ({ ...c, [key]: e.target.value }))
-                }
-                placeholder={placeholder}
-              />
-            </div>
-          ))}
-          <button
-            className="btn btn-primary btn-full"
-            onClick={saveStoreConfig}
-          >
-            {storeSaved ? "✓ Saved!" : "Save Settings"}
-          </button>
-        </div>
-      )}
 
       {/* Users tab */}
       {tab === "users" && (
