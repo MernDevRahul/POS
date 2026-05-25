@@ -25,6 +25,8 @@ app.use(helmet());
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 const allowedOrigins = [
   "http://localhost:3000",
+  "http://store.imkaa.com",
+  "https://store.imkaa.com",
   "https://pos-rho-five.vercel.app",
   "https://pos-two-tan.vercel.app",
 ];
