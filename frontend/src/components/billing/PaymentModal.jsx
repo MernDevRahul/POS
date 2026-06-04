@@ -8,12 +8,12 @@ export default function PaymentModal({ open, onClose, onConfirm, isLoading }) {
   const [paidAmount, setPaidAmount] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const { grandTotal } = totals();
-  const paid   = parseFloat(paidAmount) || 0;
+  const paid   = paymentMode === 'CASH' ? (parseFloat(paidAmount) || 0) : grandTotal;
   const change = Math.round((paid - grandTotal) * 100) / 100;
 
   const handleConfirm = () => {
     if (paid < grandTotal) return;
-    onConfirm(paidAmount, customerPhone);
+    onConfirm(paymentMode === 'CASH' ? paidAmount : grandTotal, customerPhone);
   };
 
   return (
@@ -80,14 +80,15 @@ export default function PaymentModal({ open, onClose, onConfirm, isLoading }) {
           <label className="label">Amount Received</label>
           <input
             type="number"
-            value={paidAmount}
+            value={paymentMode === 'CASH' ? paidAmount : grandTotal}
             onChange={(e) => setPaidAmount(e.target.value)}
             placeholder={fmt(grandTotal)}
             min={grandTotal}
             step="0.01"
             autoFocus
-            style={{ fontSize: '1.1rem', fontFamily: 'var(--font-mono)', textAlign: 'right' }}
+            style={{ fontSize: '1.1rem', fontFamily: 'var(--font-mono)', textAlign: 'right', opacity: paymentMode !== 'CASH' ? 0.7 : 1 }}
             onFocus={(e) => !paidAmount && setPaidAmount(grandTotal.toFixed(2))}
+            readOnly={paymentMode !== 'CASH'}
           />
         </div>
       </div>

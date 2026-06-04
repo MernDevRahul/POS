@@ -42,6 +42,7 @@ const r2 = (n) => Math.round(n * 100) / 100;
 const useCartStore = create((set, get) => ({
   items:        [],
   billDiscount: 0,
+  billDiscountPercent: 0,
   paymentMode:  'CASH',
 
   // ── Mutations ──────────────────────────────────────────────────────────────
@@ -65,6 +66,7 @@ const useCartStore = create((set, get) => ({
             qty:         1,
             unitPrice:   Number(product.sellingPrice),
             discount:    0,
+            discountPercent: 0,
           },
         ],
       };
@@ -73,29 +75,54 @@ const useCartStore = create((set, get) => ({
 
   updateQty: (id, qty) => {
     if (qty < 1) return;
-    set((s) => ({ items: s.items.map((x) => (x.id === id ? { ...x, qty } : x)) }));
+    set((s) => ({ items: s.items.map((x) => {
+      if (x.id === id) {
+        const discount = x.discountPercent ? r2(x.unitPrice * qty * (x.discountPercent / 100)) : x.discount;
+        return { ...x, qty, discount };
+      }
+      return x;
+    }) }));
   },
 
   updatePrice: (id, unitPrice) => {
-    set((s) => ({ items: s.items.map((x) => (x.id === id ? { ...x, unitPrice: Number(unitPrice) } : x)) }));
+    set((s) => ({ items: s.items.map((x) => {
+      if (x.id === id) {
+        const up = Number(unitPrice);
+        const discount = x.discountPercent ? r2(up * x.qty * (x.discountPercent / 100)) : x.discount;
+        return { ...x, unitPrice: up, discount };
+      }
+      return x;
+    }) }));
   },
 
   updateDiscount: (id, discount) => {
-    set((s) => ({ items: s.items.map((x) => (x.id === id ? { ...x, discount: Number(discount) } : x)) }));
+    set((s) => ({ items: s.items.map((x) => (x.id === id ? { ...x, discount: Number(discount), discountPercent: 0 } : x)) }));
+  },
+
+  updateDiscountPercent: (id, discountPercent) => {
+    set((s) => ({ items: s.items.map((x) => {
+      if (x.id === id) {
+        const dp = Number(discountPercent);
+        const discount = r2(x.unitPrice * x.qty * (dp / 100));
+        return { ...x, discountPercent: dp, discount };
+      }
+      return x;
+    }) }));
   },
 
   removeItem: (id) => {
     set((s) => ({ items: s.items?.filter((x) => x.id !== id) }));
   },
 
-  setBillDiscount: (v) => set({ billDiscount: Number(v) || 0 }),
+  setBillDiscount: (v) => set({ billDiscount: Number(v) || 0, billDiscountPercent: 0 }),
+  setBillDiscountPercent: (v) => set({ billDiscountPercent: Number(v) || 0, billDiscount: 0 }),
   setPaymentMode:  (v) => set({ paymentMode: v }),
 
-  clearCart: () => set({ items: [], billDiscount: 0, paymentMode: 'CASH' }),
+  clearCart: () => set({ items: [], billDiscount: 0, billDiscountPercent: 0, paymentMode: 'CASH' }),
 
   // ── Computed totals ────────────────────────────────────────────────────────
   totals: () => {
-    const { items, billDiscount } = get();
+    const { items, billDiscount, billDiscountPercent } = get();
     let subTotal = 0;
     let taxTotal = 0;
 
@@ -110,14 +137,26 @@ const useCartStore = create((set, get) => ({
 
     subTotal = r2(subTotal);
     taxTotal = r2(taxTotal);
-    const grandTotal = r2(subTotal - billDiscount + taxTotal);
+    
+    let finalBillDiscount = billDiscount;
+    if (billDiscountPercent > 0) {
+      finalBillDiscount = r2(subTotal * (billDiscountPercent / 100));
+    }
 
-    return { subTotal, taxTotal, billDiscount, grandTotal };
+    const grandTotal = r2(subTotal - finalBillDiscount + taxTotal);
+    
+    let itemDiscountTotal = 0;
+    for (const item of items) {
+      itemDiscountTotal += Number(item.discount) || 0;
+    }
+
+    return { subTotal, taxTotal, billDiscount: finalBillDiscount, itemDiscountTotal, grandTotal };
   },
 
   // ── Payload for POST /sales ────────────────────────────────────────────────
   toSalePayload: (paidAmount) => {
-    const { items, billDiscount, paymentMode } = get();
+    const { items, paymentMode } = get();
+    const { billDiscount } = get().totals();
     return {
       items: items.map((x) => ({
         productId: x.productId,

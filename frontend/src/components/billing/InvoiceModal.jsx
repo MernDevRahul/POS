@@ -106,11 +106,12 @@ export default function InvoiceModal({ open, onClose, sale }) {
         .divider{border:none;border-top:1px dashed #000;margin:8px 0}
         
         /* Ensure table columns wrap properly */
-        th:nth-child(1), td:nth-child(1) { width: 40%; }
+        th:nth-child(1), td:nth-child(1) { width: 35%; }
         th:nth-child(2), td:nth-child(2) { width: 10%; text-align: center; }
         th:nth-child(3), td:nth-child(3) { width: 15%; text-align: right; }
-        th:nth-child(4), td:nth-child(4) { width: 15%; text-align: right; }
-        th:nth-child(5), td:nth-child(5) { width: 20%; text-align: right; }
+        th:nth-child(4), td:nth-child(4) { width: 10%; text-align: right; }
+        th:nth-child(5), td:nth-child(5) { width: 10%; text-align: right; }
+        th:nth-child(6), td:nth-child(6) { width: 20%; text-align: right; }
 
         @media print {
           body { width: 80mm; margin: 0; padding: 4mm; }
@@ -129,6 +130,10 @@ export default function InvoiceModal({ open, onClose, sale }) {
   };
 
   if (!sale) return null;
+
+  const itemDiscountTotal = sale?.items?.reduce((sum, item) => sum + (Number(item.discount) || 0), 0) || 0;
+  const displaySubTotal = Number(sale?.subTotal || 0) + itemDiscountTotal;
+  const displayDiscount = Number(sale?.discountTotal || 0) + itemDiscountTotal;
 
   return (
     <Modal
@@ -206,6 +211,7 @@ export default function InvoiceModal({ open, onClose, sale }) {
               <th>Item</th>
               <th style={{ textAlign: 'right' }}>Qty</th>
               <th style={{ textAlign: 'right' }}>Rate</th>
+              <th style={{ textAlign: 'right' }}>Disc</th>
               <th style={{ textAlign: 'right' }}>GST%</th>
               <th style={{ textAlign: 'right' }}>Total</th>
             </tr>
@@ -219,6 +225,7 @@ export default function InvoiceModal({ open, onClose, sale }) {
                 </td>
                 <td style={{ textAlign: 'right' }}>{item.qty}</td>
                 <td style={{ textAlign: 'right' }}>{fmt(item.unitPrice)}</td>
+                <td style={{ textAlign: 'right', color: 'var(--danger)' }}>{item.discount > 0 ? `-${fmt(item.discount)}` : '-'}</td>
                 <td style={{ textAlign: 'right' }}>{item.gstRateSnapshot}%</td>
                 <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(item.lineTotal)}</td>
               </tr>
@@ -239,10 +246,10 @@ export default function InvoiceModal({ open, onClose, sale }) {
           paddingTop: '8px'
         }}>
           <span style={{ color: 'var(--text-muted)' }}>Subtotal</span>
-          <span style={{ textAlign: 'right' }}>{fmt(sale.subTotal)}</span>
-          {Number(sale.discountTotal) > 0 && <>
+          <span style={{ textAlign: 'right' }}>{fmt(displaySubTotal)}</span>
+          {displayDiscount > 0 && <>
             <span style={{ color: 'var(--text-muted)' }}>Discount</span>
-            <span style={{ textAlign: 'right', color: 'var(--danger)' }}>−{fmt(sale.discountTotal)}</span>
+             <span style={{ textAlign: 'right', color: 'var(--danger)' }}>−{fmt(displayDiscount)}</span>
           </>}
           <span style={{ color: 'var(--text-muted)' }}>GST (incl.)</span>
           <span style={{ textAlign: 'right', color: 'var(--info)' }}>{fmt(sale.taxTotal)}</span>

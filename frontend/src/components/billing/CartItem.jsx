@@ -3,7 +3,7 @@ import useCartStore from '@/store/cartStore';
 import useAuthStore from '@/store/authStore';
 
 export default function CartItem({ item }) {
-  const { updateQty, updatePrice, updateDiscount, removeItem } = useCartStore();
+  const { updateQty, updatePrice, updateDiscount, updateDiscountPercent, removeItem } = useCartStore();
   const { isAdmin } = useAuthStore();
 
   const { lineTotal } = (() => {
@@ -66,11 +66,24 @@ export default function CartItem({ item }) {
         </div>
       </td>
 
-      {/* Discount */}
+      {/* Discount % */}
       <td>
         <input
           type="number"
-          value={item.discount}
+          value={item.discountPercent || ''}
+          onChange={(e) => updateDiscountPercent(item.id, e.target.value)}
+          style={{ width: 54, padding: '4px 8px', fontSize: '0.8rem', textAlign: 'right' }}
+          min={0}
+          max={100}
+          placeholder="0%"
+        />
+      </td>
+
+      {/* Discount ₹ */}
+      <td>
+        <input
+          type="number"
+          value={item.discount || ''}
           onChange={(e) => updateDiscount(item.id, e.target.value)}
           style={{ width: 64, padding: '4px 8px', fontSize: '0.8rem', textAlign: 'right' }}
           min={0}

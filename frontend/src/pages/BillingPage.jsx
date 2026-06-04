@@ -26,11 +26,14 @@ export default function BillingPage() {
     clearCart,
     setBillDiscount,
     billDiscount,
+    setBillDiscountPercent,
+    billDiscountPercent,
     totals,
     toSalePayload,
   } = useCartStore();
   const { isAdmin } = useAuthStore();
-  const { subTotal, taxTotal, grandTotal } = totals();
+  const { subTotal, taxTotal, grandTotal, itemDiscountTotal, billDiscount: computedBillDiscount } = totals();
+  const displaySubTotal = subTotal + (itemDiscountTotal || 0);
 
   // Search products
   const { data: searchData } = useQuery({
@@ -39,7 +42,7 @@ export default function BillingPage() {
     enabled: search.length > 0,
     staleTime: 10_000,
   });
-  const searchResults = searchData?.data?.slice(0, 8) ?? [];
+  const searchResults = searchData?.data?.items?.slice(0, 8) ?? [];
 
   // Resolve SKU (for Enter key / barcode scan)
   const resolveSku = useCallback(
@@ -291,6 +294,7 @@ export default function BillingPage() {
                   <th>Product</th>
                   <th>Price</th>
                   <th>Qty</th>
+                  <th>Disc (%)</th>
                   <th>Disc (₹)</th>
                   <th>Total</th>
                   <th></th>
@@ -332,10 +336,11 @@ export default function BillingPage() {
         {/* Totals */}
         <div style={{ flex: 1 }}>
           {[
-            { label: "Items", value: items.reduce((s, x) => s + x.qty, 0) },
-            { label: "Subtotal", value: fmt(subTotal) },
+          { label: "Items", value: items.reduce((s, x) => s + x.qty, 0) },
+            { label: "Subtotal", value: fmt(displaySubTotal) },
+            { label: "Item Disc.", value: "-" + fmt(itemDiscountTotal), color: "var(--danger)", hide: !itemDiscountTotal },
             { label: "GST", value: fmt(taxTotal), color: "var(--info)" },
-          ]?.map(({ label, value, color }) => (
+          ].filter(x => !x.hide).map(({ label, value, color }) => (
             <div
               key={label}
               style={{
@@ -368,6 +373,43 @@ export default function BillingPage() {
             </div>
           ))}
 
+          {/* Bill discount percent input */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "8px 0",
+              borderBottom: "1px solid var(--border)",
+            }}
+          >
+            <span
+              style={{
+                color: "var(--text-muted)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.72rem",
+                letterSpacing: "0.06em",
+              }}
+            >
+              Bill Disc (%)
+            </span>
+            <input
+              type="number"
+              value={billDiscountPercent || ""}
+              onChange={(e) => setBillDiscountPercent(e.target.value)}
+              style={{
+                width: 80,
+                textAlign: "right",
+                padding: "4px 8px",
+                fontSize: "0.85rem",
+                fontFamily: "var(--font-mono)",
+              }}
+              min={0}
+              max={100}
+              placeholder="0"
+            />
+          </div>
+
           {/* Bill discount input */}
           <div
             style={{
@@ -390,7 +432,7 @@ export default function BillingPage() {
             </span>
             <input
               type="number"
-              value={billDiscount}
+              value={billDiscountPercent > 0 ? computedBillDiscount : (billDiscount || "")}
               onChange={(e) => setBillDiscount(e.target.value)}
               style={{
                 width: 80,
@@ -401,6 +443,7 @@ export default function BillingPage() {
               }}
               min={0}
               placeholder="0"
+              readOnly={billDiscountPercent > 0}
             />
           </div>
 
