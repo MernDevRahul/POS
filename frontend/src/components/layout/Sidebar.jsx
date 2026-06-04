@@ -45,6 +45,7 @@ export default function Sidebar() {
       success: 'Signed out',
       error:   'Signed out',   // always clear regardless
     });
+    navigate('/login');
   };
 
   const navItems = isAdmin() ? [...NAV, ...ADMIN_NAV] : NAV;
